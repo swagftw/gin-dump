@@ -3,7 +3,7 @@ package gindump
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime"
 	"net/http"
 	"net/url"
@@ -13,12 +13,13 @@ import (
 )
 
 func Dump() gin.HandlerFunc {
-	return DumpWithOptions(true, true, true, true, true, nil)
+	return DumpWithOptions([]string{}, true, true, true, true, true, nil)
 }
 
-func DumpWithOptions(showReq bool, showResp bool, showBody bool, showHeaders bool, showCookies bool, cb func(dumpStr string)) gin.HandlerFunc {
+func DumpWithOptions(hideFields []string, showReq bool, showResp bool, showBody bool, showHeaders bool, showCookies bool, cb func(dumpStr string)) gin.HandlerFunc {
 	headerHiddenFields := make([]string, 0)
 	bodyHiddenFields := make([]string, 0)
+	bodyHiddenFields = append(bodyHiddenFields, hideFields...)
 
 	if !showCookies {
 		headerHiddenFields = append(headerHiddenFields, "cookie")
@@ -28,7 +29,7 @@ func DumpWithOptions(showReq bool, showResp bool, showBody bool, showHeaders boo
 		var strB strings.Builder
 
 		if showReq && showHeaders {
-			//dump req header
+			// dump req header
 			s, err := FormatToBeautifulJson(ctx.Request.Header, headerHiddenFields)
 
 			if err != nil {
@@ -40,15 +41,15 @@ func DumpWithOptions(showReq bool, showResp bool, showBody bool, showHeaders boo
 		}
 
 		if showReq && showBody {
-			//dump req body
+			// dump req body
 			if ctx.Request.ContentLength > 0 {
-				buf, err := ioutil.ReadAll(ctx.Request.Body)
+				buf, err := io.ReadAll(ctx.Request.Body)
 				if err != nil {
 					strB.WriteString(fmt.Sprintf("\nread bodyCache err \n %s", err.Error()))
 					goto DumpRes
 				}
-				rdr := ioutil.NopCloser(bytes.NewBuffer(buf))
-				ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
+				rdr := io.NopCloser(bytes.NewBuffer(buf))
+				ctx.Request.Body = io.NopCloser(bytes.NewBuffer(buf))
 				ctGet := ctx.Request.Header.Get("Content-Type")
 				ct, _, err := mime.ParseMediaType(ctGet)
 				if err != nil {
@@ -58,7 +59,7 @@ func DumpWithOptions(showReq bool, showResp bool, showBody bool, showHeaders boo
 
 				switch ct {
 				case gin.MIMEJSON:
-					bts, err := ioutil.ReadAll(rdr)
+					bts, err := io.ReadAll(rdr)
 					if err != nil {
 						strB.WriteString(fmt.Sprintf("\nread rdr err \n %s", err.Error()))
 						goto DumpRes
@@ -73,7 +74,7 @@ func DumpWithOptions(showReq bool, showResp bool, showBody bool, showHeaders boo
 					strB.WriteString("\nRequest-Body:\n")
 					strB.WriteString(string(s))
 				case gin.MIMEPOSTForm:
-					bts, err := ioutil.ReadAll(rdr)
+					bts, err := io.ReadAll(rdr)
 					if err != nil {
 						strB.WriteString(fmt.Sprintf("\nread rdr err \n %s", err.Error()))
 						goto DumpRes
@@ -99,7 +100,7 @@ func DumpWithOptions(showReq bool, showResp bool, showBody bool, showHeaders boo
 		}
 
 		if showResp && showHeaders {
-			//dump res header
+			// dump res header
 			sHeader, err := FormatToBeautifulJson(ctx.Writer.Header(), headerHiddenFields)
 			if err != nil {
 				strB.WriteString(fmt.Sprintf("\nparse res header err \n" + err.Error()))
@@ -116,7 +117,7 @@ func DumpWithOptions(showReq bool, showResp bool, showBody bool, showHeaders boo
 				goto End
 			}
 
-			//dump res body
+			// dump res body
 			if bodyAllowedForStatus(ctx.Writer.Status()) && bw.bodyCache.Len() > 0 {
 				ctGet := ctx.Writer.Header().Get("Content-Type")
 				ct, _, err := mime.ParseMediaType(ctGet)
@@ -155,7 +156,7 @@ type bodyWriter struct {
 	bodyCache *bytes.Buffer
 }
 
-//rewrite Write()
+// rewrite Write()
 func (w bodyWriter) Write(b []byte) (int, error) {
 	w.bodyCache.Write(b)
 	return w.ResponseWriter.Write(b)

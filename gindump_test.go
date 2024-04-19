@@ -59,7 +59,7 @@ func TestMIMEJSON(t *testing.T) {
 }
 func TestMIMEJSONWithOption(t *testing.T) {
 	router := gin.New()
-	router.Use(DumpWithOptions(true, false, true, true, false, func(dumpStr string) {
+	router.Use(DumpWithOptions([]string{}, true, false, true, true, false, func(dumpStr string) {
 		fmt.Println(dumpStr)
 	}))
 

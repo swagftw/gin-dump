@@ -24,7 +24,7 @@ func BeautifyJsonBytes(data []byte, hiddenFields []string) ([]byte, error) {
 	return []byte(format(v, 1)), nil
 }
 
-//transfer v to beautified json bytes
+// transfer v to beautified json bytes
 func FormatToBeautifulJson(v interface{}, hiddenFields []string) ([]byte, error) {
 
 	data, err := json.Marshal(v)
@@ -76,8 +76,8 @@ func formatMap(m map[string]interface{}, depth int) string {
 
 	currentIndent := generateIndent(depth - 1)
 	nextIndent := generateIndent(depth)
-	rows := []string{}
-	keys := []string{}
+	var rows []string
+	var keys []string
 
 	for key := range m {
 		keys = append(keys, key)
@@ -91,9 +91,7 @@ func formatMap(m map[string]interface{}, depth int) string {
 		v := format(val, depth+1)
 
 		valueIndent := " "
-		if Newline == "" {
-			valueIndent = ""
-		}
+
 		row := fmt.Sprintf("%s%s:%s%s", nextIndent, k, valueIndent, v)
 		rows = append(rows, row)
 	}
