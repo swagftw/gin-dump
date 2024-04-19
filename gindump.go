@@ -18,6 +18,7 @@ func Dump() gin.HandlerFunc {
 
 func DumpWithOptions(hideFields []string, showReq bool, showResp bool, showBody bool, showHeaders bool, showCookies bool, cb func(dumpStr string)) gin.HandlerFunc {
 	headerHiddenFields := make([]string, 0)
+	headerHiddenFields = append(headerHiddenFields, hideFields...)
 	bodyHiddenFields := make([]string, 0)
 	bodyHiddenFields = append(bodyHiddenFields, hideFields...)
 
@@ -36,7 +37,7 @@ func DumpWithOptions(hideFields []string, showReq bool, showResp bool, showBody 
 				strB.WriteString(fmt.Sprintf("\nparse req header err \n" + err.Error()))
 			} else {
 				strB.WriteString("Request-Header:\n")
-				strB.WriteString(string(s))
+				strB.Write(s)
 			}
 		}
 

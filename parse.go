@@ -129,9 +129,21 @@ func removeHiddenFields(v interface{}, hiddenFields []string) interface{} {
 
 	// case insensitive key deletion
 	for _, hiddenField := range hiddenFields {
-		for k := range m {
-			if strings.ToLower(k) == strings.ToLower(hiddenField) {
+		for k, value := range m {
+			if strings.EqualFold(hiddenField, k) {
 				delete(m, k)
+			}
+
+			if arr, ok := value.([]interface{}); ok {
+				for _, val := range arr {
+					if _, ok := val.(map[string]interface{}); ok {
+						m[k] = removeHiddenFields(val, hiddenFields)
+					}
+				}
+			}
+
+			if _, ok := value.(map[string]interface{}); ok {
+				m[k] = removeHiddenFields(value, hiddenFields)
 			}
 		}
 	}
